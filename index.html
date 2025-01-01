@@ -14,45 +14,20 @@
     <script type="module">
         import { initializeUser } from './game-data.js';
         
-        // Проверяем авторизацию при загрузке страницы
+        // Инициализация при загрузке страницы
         async function init() {
             try {
-                const userId = sessionStorage.getItem('userId');
-                const username = sessionStorage.getItem('username');
-                const isLoaded = sessionStorage.getItem('gameLoaded');
-
-                console.log('User ID:', userId);
-                console.log('Username:', username);
-                console.log('Game Loaded:', isLoaded);
-
-                if (!userId || !username) {
-                    console.error('User session not found');
-                    document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Сессия истекла</h2><p>Пожалуйста, <a href="login.html">войдите снова</a></p></div>';
-                    return;
-                }
-
-                if (!isLoaded) {
-                    console.log('Game not loaded');
-                    document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Игра не загружена</h2><p>Пожалуйста, <a href="loading.html">загрузите игру</a></p></div>';
-                    return;
-                }
-
                 const user = await initializeUser();
                 if (!user) {
-                    console.error('Failed to initialize user');
-                    sessionStorage.removeItem('gameLoaded');
-                    document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Ошибка загрузки данных</h2><p>Пожалуйста, <a href="loading.html">попробуйте снова</a></p></div>';
-                    return;
+                    console.warn('Failed to initialize user data');
                 }
             } catch (error) {
                 console.error('Initialization error:', error);
-                sessionStorage.removeItem('gameLoaded');
-                document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Произошла ошибка</h2><p>Пожалуйста, <a href="loading.html">попробуйте снова</a></p></div>';
             }
         }
 
-        // Запускаем инициализацию при загрузке страницы
-        window.addEventListener('load', init);
+        // Запускаем инициализацию
+        init();
     </script>
 </head>
 <body>
