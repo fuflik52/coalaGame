@@ -1,6 +1,9 @@
 // Импортируем конфигурацию
 // import { TELEGRAM_BOT_TOKEN } from './config.js';
 
+// Импортируем функции для работы с данными пользователя
+import { initializeUser, getCurrentUser } from './game-data.js';
+
 // Инициализируем Telegram Web App
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -17,18 +20,32 @@ class TelegramAuth {
         this.initTelegramAuth();
     }
 
-    initTelegramAuth() {
-        // Получаем данные пользователя из Telegram Web App
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            const user = tg.initDataUnsafe.user;
-            this.handleTelegramAuth(user);
-        }
+    async initTelegramAuth() {
+        // Инициализируем пользователя
+        const user = await initializeUser();
+        
+        // Обновляем UI
+        this.updateUserInterface(user);
 
         // Логируем события Telegram Web App
         console.log('[Telegram.WebApp] Initialized');
         tg.onEvent('viewportChanged', () => {
             console.log('[Telegram.WebApp] Viewport changed');
         });
+    }
+
+    updateUserInterface(user) {
+        // Обновляем имя пользователя на странице
+        const usernameElement = document.querySelector('.username');
+        if (usernameElement) {
+            usernameElement.textContent = user.username;
+        }
+
+        // Обновляем аватар, если есть
+        const userIcon = document.querySelector('.user-icon');
+        if (userIcon && user.avatar) {
+            userIcon.src = user.avatar;
+        }
     }
 
     handleTelegramAuth(user) {
@@ -181,8 +198,8 @@ window.telegramAuth = new TelegramAuth();
 
 // Функция для вибрации на мобильных устройствах
 function vibrate(duration = 20) {
-    if (navigator.vibrate) {
-        navigator.vibrate(duration);
+    if (tg.platform === 'android' || tg.platform === 'ios') {
+        window.navigator.vibrate(duration);
     }
 }
 
@@ -190,11 +207,8 @@ function vibrate(duration = 20) {
 document.addEventListener('DOMContentLoaded', () => {
     window.telegramAuth.checkExistingAuth();
     
-    const clickableElements = document.querySelectorAll('button, .card-item, .nav-item, .main-circle');
-    
+    const clickableElements = document.querySelectorAll('button, .nav-item, .clickable');
     clickableElements.forEach(element => {
-        element.addEventListener('click', () => {
-            vibrate();
-        });
+        element.addEventListener('click', () => vibrate());
     });
 });
