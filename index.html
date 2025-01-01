@@ -21,13 +21,19 @@
                 const username = sessionStorage.getItem('username');
                 const isLoaded = sessionStorage.getItem('gameLoaded');
 
+                console.log('User ID:', userId);
+                console.log('Username:', username);
+                console.log('Game Loaded:', isLoaded);
+
                 if (!userId || !username) {
-                    window.location.replace('login.html');
+                    console.error('User session not found. Redirecting to login.');
+                    setTimeout(() => window.location.replace('login.html'), 2000);
                     return;
                 }
 
                 if (!isLoaded) {
-                    window.location.replace('loading.html');
+                    console.error('Game not loaded. Redirecting to loading.');
+                    setTimeout(() => window.location.replace('loading.html'), 2000);
                     return;
                 }
 
@@ -41,7 +47,7 @@
             } catch (error) {
                 console.error('Initialization error:', error);
                 sessionStorage.clear();
-                window.location.replace('login.html');
+                setTimeout(() => window.location.replace('login.html'), 2000);
             }
         }
 
