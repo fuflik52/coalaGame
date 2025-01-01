@@ -8,19 +8,20 @@ async function login(username, password) {
         }
 
         // Получаем пользователя по имени
-        const { data: user, error } = await supabase
+        const { data: users, error } = await supabase
             .from('players')
             .select('*')
-            .eq('username', username)
-            .single();
+            .eq('username', username);
 
         if (error) {
             console.error('Login error:', error);
             if (error.message.includes('network') || error.message.includes('connection')) {
                 throw new Error('Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение');
             }
-            throw new Error('Неверное имя пользователя или пароль');
+            throw new Error('Ошибка при входе в систему');
         }
+
+        const user = users && users.length > 0 ? users[0] : null;
 
         if (!user || user.password !== password) {
             throw new Error('Неверное имя пользователя или пароль');
@@ -66,11 +67,10 @@ async function register(username, password) {
         }
 
         // Проверяем, существует ли пользователь
-        const { data: existingUser, error: checkError } = await supabase
+        const { data: existingUsers, error: checkError } = await supabase
             .from('players')
             .select('username')
-            .eq('username', username)
-            .maybeSingle();
+            .eq('username', username);
 
         if (checkError) {
             if (checkError.message.includes('network') || checkError.message.includes('connection')) {
@@ -79,7 +79,7 @@ async function register(username, password) {
             throw new Error('Ошибка при проверке пользователя');
         }
 
-        if (existingUser) {
+        if (existingUsers && existingUsers.length > 0) {
             throw new Error('Пользователь с таким именем уже существует');
         }
 

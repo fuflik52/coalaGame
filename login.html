@@ -31,7 +31,7 @@
             text-align: center;
         }
 
-        .login-form {
+        .form-container {
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -90,12 +90,31 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
+
+        .switch-form {
+            margin-top: 15px;
+            color: #28a745;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .register-form {
+            display: none;
+        }
+
+        .active {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <img src="https://i.postimg.cc/HnSVzqGF/image.png" alt="Koala" class="koala-image">
-        <form class="login-form" id="loginForm">
+        
+        <!-- Форма входа -->
+        <form class="form-container active" id="loginForm">
             <div class="input-group">
                 <label for="username">Имя пользователя</label>
                 <input type="text" id="username" name="username" required placeholder="Введите имя пользователя">
@@ -105,10 +124,43 @@
                 <input type="password" id="password" name="password" required placeholder="Введите пароль">
             </div>
             <button type="submit">Войти</button>
-            <button type="button" id="registerButton">Регистрация</button>
+            <div class="switch-form" onclick="switchForm('register')">Создать аккаунт</div>
         </form>
-        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Форма регистрации -->
+        <form class="form-container register-form" id="registerForm">
+            <div class="input-group">
+                <label for="regUsername">Имя пользователя</label>
+                <input type="text" id="regUsername" name="username" required placeholder="Придумайте имя пользователя">
+            </div>
+            <div class="input-group">
+                <label for="regPassword">Пароль</label>
+                <input type="password" id="regPassword" name="password" required placeholder="Придумайте пароль">
+            </div>
+            <button type="submit">Зарегистрироваться</button>
+            <div class="switch-form" onclick="switchForm('login')">Уже есть аккаунт? Войти</div>
+        </form>
+
+        <div id="errorMessage" class="error-message"></div>
     </div>
+
+    <script>
+        function switchForm(type) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            errorMessage.style.display = 'none';
+            
+            if (type === 'register') {
+                loginForm.classList.remove('active');
+                registerForm.classList.add('active');
+            } else {
+                registerForm.classList.remove('active');
+                loginForm.classList.add('active');
+            }
+        }
+    </script>
     <script type="module" src="auth.js"></script>
 </body>
 </html>
