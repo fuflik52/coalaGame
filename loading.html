@@ -5,144 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loading - Koala Game</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.1"></script>
-    <script type="module" src="supabase-config.js"></script>
-    <script type="module" src="game-data.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #1A2C1A;
-            color: white;
-            font-family: Arial, sans-serif;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-image: url('https://i.postimg.cc/NfRtgtgN/bg.png');
-            background-size: cover;
-            background-position: center;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1;
-        }
-
-        .loading-container {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-            background: rgba(26, 44, 26, 0.8);
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .loading-text {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #28a745;
-            text-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-        }
-
-        .loading-steps {
-            text-align: left;
-            margin-top: 20px;
-        }
-
-        .step {
-            margin: 15px 0;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-            font-size: 18px;
-            display: none;
-        }
-
-        .step.visible {
-            display: block;
-            opacity: 0;
-        }
-
-        .step.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .step.completed {
-            color: #28a745;
-        }
-
-        .step.completed::after {
-            content: " ✓";
-            color: #28a745;
-            margin-left: 10px;
-            animation: checkmark 0.5s ease-in-out;
-        }
-
-        .koala-image {
-            width: 150px;
-            height: 150px;
-            margin-bottom: 20px;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        @keyframes checkmark {
-            0% { transform: scale(0); }
-            50% { transform: scale(1.5); }
-            100% { transform: scale(1); }
-        }
-
-        .progress-bar {
-            width: 200px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            margin: 20px auto;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: #28a745;
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-    </style>
-</head>
-<body>
-    <div class="loading-container">
-        <img src="https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/koala_loading_vrqmze.png" alt="Koala" class="koala-image">
-        <div class="loading-text">Загрузка игры...</div>
-        <div class="loading-steps">
-            <div class="step" data-step="1">Загрузка ресурсов...</div>
-            <div class="step" data-step="2">Подготовка интерфейса...</div>
-            <div class="step" data-step="3">Проверка аккаунта...</div>
-            <div class="step" data-step="4">Инициализация игры...</div>
-            <div class="step" data-step="5">Почти готово...</div>
-        </div>
-    </div>
-
     <script type="module">
         import { supabase } from './supabase-config.js';
-        import { getPlayerData } from './game-data.js';
+        import { initializeUser } from './game-data.js';
 
         function showStep(stepNumber) {
             const step = document.querySelector(`[data-step="${stepNumber}"]`);
@@ -163,9 +28,7 @@
 
         async function checkOrCreateAccount() {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                const userId = user?.id || 'guest-' + Date.now();
-                await getPlayerData(userId);
+                await initializeUser();
                 return true;
             } catch (error) {
                 console.error('Ошибка при проверке аккаунта:', error);
@@ -207,5 +70,90 @@
 
         window.onload = startLoading;
     </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1A2C1A;
+            color: white;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-image: url('https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/bg_vrqmze.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .loading-container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            background: rgba(26, 44, 26, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .loading-text {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #28a745;
+        }
+
+        .step {
+            margin: 10px 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .step.visible {
+            display: block;
+        }
+
+        .step.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .step.completed {
+            color: #28a745;
+        }
+
+        .step.completed::after {
+            content: " ✓";
+            color: #28a745;
+        }
+
+        .koala-image {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <img src="https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/koala_loading_vrqmze.png" alt="Koala" class="koala-image">
+        <div class="loading-text">Загрузка игры...</div>
+        <div class="loading-steps">
+            <div class="step" data-step="1">Загрузка ресурсов...</div>
+            <div class="step" data-step="2">Подготовка интерфейса...</div>
+            <div class="step" data-step="3">Проверка аккаунта...</div>
+            <div class="step" data-step="4">Инициализация игры...</div>
+            <div class="step" data-step="5">Почти готово...</div>
+        </div>
+    </div>
 </body>
 </html>
