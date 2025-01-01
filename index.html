@@ -15,35 +15,38 @@
         import { initializeUser } from './game-data.js';
         
         // Проверяем авторизацию при загрузке страницы
-        async function checkAuth() {
-            const userId = sessionStorage.getItem('userId');
-            const username = sessionStorage.getItem('username');
-            const isLoaded = sessionStorage.getItem('gameLoaded');
-
-            if (!userId || !username) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            if (!isLoaded) {
-                window.location.href = 'loading.html';
-                return;
-            }
-
+        async function init() {
             try {
+                const userId = sessionStorage.getItem('userId');
+                const username = sessionStorage.getItem('username');
+                const isLoaded = sessionStorage.getItem('gameLoaded');
+
+                if (!userId || !username) {
+                    window.location.replace('login.html');
+                    return;
+                }
+
+                if (!isLoaded) {
+                    window.location.replace('loading.html');
+                    return;
+                }
+
                 const user = await initializeUser();
                 if (!user) {
-                    sessionStorage.clear();
-                    window.location.href = 'login.html';
+                    throw new Error('Failed to initialize user');
                 }
+
+                // Если все успешно, оставляем флаг загрузки
+                sessionStorage.setItem('gameLoaded', 'true');
             } catch (error) {
-                console.error('Auth error:', error);
+                console.error('Initialization error:', error);
                 sessionStorage.clear();
-                window.location.href = 'login.html';
+                window.location.replace('login.html');
             }
         }
 
-        window.addEventListener('load', checkAuth);
+        // Запускаем инициализацию при загрузке страницы
+        window.addEventListener('load', init);
     </script>
 </head>
 <body>

@@ -11,19 +11,43 @@ async function checkAuth() {
         window.location.href = 'login.html';
         return false;
     }
-    return true;
+
+    try {
+        const { data: userData, error } = await supabase
+            .from('players')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+
+        if (error || !userData) {
+            console.error('Auth check error:', error);
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Auth check error:', error);
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+        return false;
+    }
 }
 
 // Инициализация пользователя
 export async function initializeUser() {
     try {
-        // Проверяем авторизацию
-        const isAuth = await checkAuth();
-        if (!isAuth) return null;
-
         // Получаем ID пользователя из сессии
         const userId = sessionStorage.getItem('userId');
         const username = sessionStorage.getItem('username');
+
+        if (!userId || !username) {
+            console.error('No user session found');
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+            return null;
+        }
 
         // Получаем данные пользователя
         const { data: userData, error } = await supabase
@@ -39,11 +63,23 @@ export async function initializeUser() {
             return null;
         }
 
+        // Обновляем время последнего входа
+        await supabase
+            .from('players')
+            .update({ last_login: new Date().toISOString() })
+            .eq('user_id', userId);
+
         currentUser = {
             id: userData.user_id,
             username: userData.username,
-            balance: userData.balance
+            balance: userData.balance,
+            upgrades: userData.upgrades || {}
         };
+
+        // Отмечаем, что игра загружена
+        if (!sessionStorage.getItem('gameLoaded')) {
+            sessionStorage.setItem('gameLoaded', 'true');
+        }
 
         return currentUser;
     } catch (error) {
@@ -57,10 +93,6 @@ export async function initializeUser() {
 // Получение данных игрока
 export async function getPlayerData(userId) {
     try {
-        // Проверяем авторизацию
-        const isAuth = await checkAuth();
-        if (!isAuth) return null;
-
         const { data, error } = await supabase
             .from('players')
             .select('*')
@@ -82,10 +114,6 @@ export async function getPlayerData(userId) {
 // Обновление данных игрока
 export async function updatePlayerData(userId, updates) {
     try {
-        // Проверяем авторизацию
-        const isAuth = await checkAuth();
-        if (!isAuth) return null;
-
         const { data, error } = await supabase
             .from('players')
             .update({
