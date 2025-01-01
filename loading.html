@@ -93,6 +93,9 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
                 completeStep(5);
 
+                // Отмечаем, что загрузка завершена
+                sessionStorage.setItem('gameLoaded', 'true');
+
                 // Небольшая задержка перед переходом
                 await new Promise(resolve => setTimeout(resolve, 500));
 

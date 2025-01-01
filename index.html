@@ -4,14 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Koala Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.1"></script>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="sections.css">
     <link rel="stylesheet" href="reward.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.1"></script>
     <script type="module" src="supabase-config.js"></script>
     <script type="module" src="game-data.js"></script>
     <script type="module" src="reward.js"></script>
+    <script type="module">
+        import { initializeUser } from './game-data.js';
+        
+        // Проверяем авторизацию при загрузке страницы
+        async function checkAuth() {
+            const userId = sessionStorage.getItem('userId');
+            const username = sessionStorage.getItem('username');
+            const isLoaded = sessionStorage.getItem('gameLoaded');
+
+            if (!userId || !username) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (!isLoaded) {
+                window.location.href = 'loading.html';
+                return;
+            }
+
+            try {
+                const user = await initializeUser();
+                if (!user) {
+                    sessionStorage.clear();
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        window.addEventListener('load', checkAuth);
+    </script>
 </head>
 <body>
     <div class="mobile-frame">
@@ -97,13 +130,5 @@
     <script type="module" src="background.js"></script>
     <script type="module" src="script.js"></script>
     <script type="module" src="snow.js"></script>
-    <script>
-        // Проверяем, пришли ли мы с loading.html
-        if (!sessionStorage.getItem('loaded')) {
-            window.location.href = 'loading.html';
-        } else {
-            sessionStorage.removeItem('loaded');
-        }
-    </script>
 </body>
 </html>
