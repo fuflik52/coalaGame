@@ -65,7 +65,13 @@
         }
 
         async function startLoading() {
+            const loadingText = document.querySelector('.loading-text');
+            const retryButton = document.querySelector('.retry-button');
+            
             try {
+                if (retryButton) retryButton.style.display = 'none';
+                loadingText.textContent = 'Загрузка игры...';
+                
                 // Проверяем авторизацию
                 const isAuth = await checkAuth();
                 if (!isAuth) return;
@@ -84,7 +90,7 @@
                 showStep(3);
                 const user = await initializeUser();
                 if (!user) {
-                    throw new Error('Failed to initialize user');
+                    throw new Error('Не удалось загрузить данные пользователя');
                 }
                 await new Promise(resolve => setTimeout(resolve, 300));
                 completeStep(3);
@@ -101,22 +107,19 @@
 
                 // Отмечаем, что загрузка завершена
                 sessionStorage.setItem('gameLoaded', 'true');
-
+                
                 // Переход на главную страницу
                 window.location.href = 'index.html';
             } catch (error) {
                 console.error('Loading error:', error);
-                // При ошибке соединения пробуем перезагрузить страницу
-                if (error.message.includes('network') || error.message.includes('connection')) {
-                    location.reload();
-                } else {
-                    sessionStorage.removeItem('gameLoaded');
-                    const currentStep = document.querySelector('.loading-step.active');
-                    if (currentStep) {
-                        currentStep.classList.add('error');
-                    }
-                    // Добавляем задержку перед перезагрузкой
-                    setTimeout(() => location.reload(), 2000);
+                const currentStep = document.querySelector('.loading-step.active');
+                if (currentStep) {
+                    currentStep.classList.add('error');
+                }
+                
+                loadingText.textContent = 'Произошла ошибка при загрузке';
+                if (retryButton) {
+                    retryButton.style.display = 'block';
                 }
             }
         }
@@ -153,9 +156,9 @@
         }
 
         .loading-text {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #28a745;
+            margin-top: 20px;
+            color: white;
+            font-size: 18px;
         }
 
         .step {
@@ -206,6 +209,23 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
+
+        .retry-button {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .retry-button:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -219,6 +239,7 @@
             <div class="step" data-step="4">Инициализация игры...</div>
             <div class="step" data-step="5">Почти готово...</div>
         </div>
+        <button class="retry-button" onclick="startLoading()">Попробовать снова</button>
     </div>
 </body>
 </html>

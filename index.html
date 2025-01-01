@@ -26,29 +26,28 @@
                 console.log('Game Loaded:', isLoaded);
 
                 if (!userId || !username) {
-                    console.error('User session not found. Redirecting to login.');
-                    window.location.replace('login.html');
+                    console.error('User session not found');
+                    document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Сессия истекла</h2><p>Пожалуйста, <a href="login.html">войдите снова</a></p></div>';
                     return;
                 }
 
                 if (!isLoaded) {
-                    console.log('Game not loaded. Redirecting to loading.');
-                    window.location.replace('loading.html');
+                    console.log('Game not loaded');
+                    document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Игра не загружена</h2><p>Пожалуйста, <a href="loading.html">загрузите игру</a></p></div>';
                     return;
                 }
 
                 const user = await initializeUser();
                 if (!user) {
-                    console.error('Failed to initialize user. Redirecting to loading.');
+                    console.error('Failed to initialize user');
                     sessionStorage.removeItem('gameLoaded');
-                    window.location.replace('loading.html');
+                    document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Ошибка загрузки данных</h2><p>Пожалуйста, <a href="loading.html">попробуйте снова</a></p></div>';
                     return;
                 }
             } catch (error) {
                 console.error('Initialization error:', error);
-                // Не очищаем всю сессию, только флаг загрузки
                 sessionStorage.removeItem('gameLoaded');
-                window.location.replace('loading.html');
+                document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h2>Произошла ошибка</h2><p>Пожалуйста, <a href="loading.html">попробуйте снова</a></p></div>';
             }
         }
 
