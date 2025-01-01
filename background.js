@@ -138,10 +138,6 @@ document.addEventListener('visibilitychange', () => {
         addOfflineEarnings();
     }
 });
-// Функция для сохранения времени последнего визита
-function saveLastVisitTime() {
-    localStorage.setItem('lastVisitTime', Date.now());
-}
 
 // Функция для получения времени последнего визита
 function getLastVisitTime() {

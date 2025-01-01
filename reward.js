@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="flex flex-col">
                         <span class="text-white">${item.title}</span>
                         <div class="flex items-center gap-1">
-                            <img src="https://i.postimg.cc/T1LPtGZ9/leaf-card.png" alt="leaf" class="w-[12px] h-[17px]">
+                            <img src="https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/leaf_card_vrqmze.png" alt="leaf" class="w-[12px] h-[17px]">
                             <span class="text-white">${item.points}</span>
                         </div>
                     </div>
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             </svg>
                         </div>
                     </button>
-                    <img src="https://i.postimg.cc/qRSMVPDB/right-arrow.png" alt="arrow" class="w-[8px] h-[14px] opacity-40">
+                    <img src="https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/right_arrow_vrqmze.png" alt="arrow" class="w-[8px] h-[14px] opacity-40">
                 </div>
             </div>
         `;
