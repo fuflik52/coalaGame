@@ -1,5 +1,8 @@
 import { supabase } from './supabase-config.js';
 
+// Настройка для пропуска экрана загрузки
+const SKIP_LOADING = true; // Измените на false, если хотите видеть экран загрузки
+
 // Функция для входа
 async function login(username, password) {
     try {
@@ -30,6 +33,11 @@ async function login(username, password) {
         // Сохраняем данные пользователя в сессии
         sessionStorage.setItem('userId', user.user_id);
         sessionStorage.setItem('username', user.username);
+        
+        // Если пропускаем загрузку, сразу помечаем игру как загруженную
+        if (SKIP_LOADING) {
+            sessionStorage.setItem('gameLoaded', 'true');
+        }
 
         try {
             // Обновляем время последнего входа
@@ -39,11 +47,10 @@ async function login(username, password) {
                 .eq('user_id', user.user_id);
         } catch (updateError) {
             console.warn('Failed to update last login time:', updateError);
-            // Продолжаем работу даже если не удалось обновить время
         }
 
-        // Перенаправляем на страницу загрузки
-        window.location.href = 'loading.html';
+        // Перенаправляем на нужную страницу в зависимости от настройки
+        window.location.href = SKIP_LOADING ? 'index.html' : 'loading.html';
     } catch (error) {
         console.error('Login error:', error);
         showError(error.message);
@@ -108,9 +115,14 @@ async function register(username, password) {
         // Сохраняем данные пользователя в сессии
         sessionStorage.setItem('userId', newUser.user_id);
         sessionStorage.setItem('username', newUser.username);
+        
+        // Если пропускаем загрузку, сразу помечаем игру как загруженную
+        if (SKIP_LOADING) {
+            sessionStorage.setItem('gameLoaded', 'true');
+        }
 
-        // Перенаправляем на страницу загрузки
-        window.location.href = 'loading.html';
+        // Перенаправляем на нужную страницу в зависимости от настройки
+        window.location.href = SKIP_LOADING ? 'index.html' : 'loading.html';
     } catch (error) {
         console.error('Registration error:', error);
         showError(error.message);
