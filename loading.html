@@ -14,6 +14,7 @@
             const username = sessionStorage.getItem('username');
 
             if (!userId || !username) {
+                console.error('No user session found');
                 window.location.href = 'login.html';
                 return false;
             }
@@ -35,8 +36,13 @@
                 return true;
             } catch (error) {
                 console.error('Auth check error:', error);
-                sessionStorage.clear();
-                window.location.href = 'login.html';
+                // При ошибке соединения не очищаем сессию
+                if (error.message.includes('network') || error.message.includes('connection')) {
+                    location.reload();
+                } else {
+                    sessionStorage.clear();
+                    window.location.href = 'login.html';
+                }
                 return false;
             }
         }
@@ -96,15 +102,22 @@
                 // Отмечаем, что загрузка завершена
                 sessionStorage.setItem('gameLoaded', 'true');
 
-                // Небольшая задержка перед переходом
-                await new Promise(resolve => setTimeout(resolve, 500));
-
                 // Переход на главную страницу
-                window.location.replace('index.html');
+                window.location.href = 'index.html';
             } catch (error) {
                 console.error('Loading error:', error);
-                sessionStorage.clear();
-                window.location.href = 'login.html';
+                // При ошибке соединения пробуем перезагрузить страницу
+                if (error.message.includes('network') || error.message.includes('connection')) {
+                    location.reload();
+                } else {
+                    sessionStorage.removeItem('gameLoaded');
+                    const currentStep = document.querySelector('.loading-step.active');
+                    if (currentStep) {
+                        currentStep.classList.add('error');
+                    }
+                    // Добавляем задержку перед перезагрузкой
+                    setTimeout(() => location.reload(), 2000);
+                }
             }
         }
 
@@ -171,6 +184,15 @@
         .step.completed::after {
             content: " ✓";
             color: #28a745;
+        }
+
+        .step.error {
+            color: #ff0000;
+        }
+
+        .step.error::after {
+            content: " ✗";
+            color: #ff0000;
         }
 
         .koala-image {

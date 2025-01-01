@@ -27,27 +27,28 @@
 
                 if (!userId || !username) {
                     console.error('User session not found. Redirecting to login.');
-                    setTimeout(() => window.location.replace('login.html'), 2000);
+                    window.location.replace('login.html');
                     return;
                 }
 
                 if (!isLoaded) {
-                    console.error('Game not loaded. Redirecting to loading.');
-                    setTimeout(() => window.location.replace('loading.html'), 2000);
+                    console.log('Game not loaded. Redirecting to loading.');
+                    window.location.replace('loading.html');
                     return;
                 }
 
                 const user = await initializeUser();
                 if (!user) {
-                    throw new Error('Failed to initialize user');
+                    console.error('Failed to initialize user. Redirecting to loading.');
+                    sessionStorage.removeItem('gameLoaded');
+                    window.location.replace('loading.html');
+                    return;
                 }
-
-                // Если все успешно, оставляем флаг загрузки
-                sessionStorage.setItem('gameLoaded', 'true');
             } catch (error) {
                 console.error('Initialization error:', error);
-                sessionStorage.clear();
-                setTimeout(() => window.location.replace('login.html'), 2000);
+                // Не очищаем всю сессию, только флаг загрузки
+                sessionStorage.removeItem('gameLoaded');
+                window.location.replace('loading.html');
             }
         }
 
