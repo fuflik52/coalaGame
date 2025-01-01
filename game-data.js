@@ -8,7 +8,7 @@ async function checkAuth() {
     const username = sessionStorage.getItem('username');
 
     if (!userId || !username) {
-        window.location.href = 'login.html';
+        console.error('No user session found');
         return false;
     }
 
@@ -21,16 +21,18 @@ async function checkAuth() {
 
         if (error || !userData) {
             console.error('Auth check error:', error);
-            sessionStorage.clear();
-            window.location.href = 'login.html';
+            if (error && (error.message.includes('network') || error.message.includes('connection'))) {
+                throw new Error('Network error');
+            }
             return false;
         }
 
         return true;
     } catch (error) {
         console.error('Auth check error:', error);
-        sessionStorage.clear();
-        window.location.href = 'login.html';
+        if (error.message === 'Network error') {
+            throw error;
+        }
         return false;
     }
 }
@@ -44,8 +46,6 @@ export async function initializeUser() {
 
         if (!userId || !username) {
             console.error('No user session found');
-            sessionStorage.clear();
-            window.location.href = 'login.html';
             return null;
         }
 
@@ -58,16 +58,23 @@ export async function initializeUser() {
 
         if (error || !userData) {
             console.error('Error getting user data:', error);
-            sessionStorage.clear();
-            window.location.href = 'login.html';
+            // Проверяем, является ли ошибка сетевой
+            if (error && (error.message.includes('network') || error.message.includes('connection'))) {
+                throw new Error('Network error');
+            }
             return null;
         }
 
-        // Обновляем время последнего входа
-        await supabase
-            .from('players')
-            .update({ last_login: new Date().toISOString() })
-            .eq('user_id', userId);
+        // Пробуем обновить время последнего входа
+        try {
+            await supabase
+                .from('players')
+                .update({ last_login: new Date().toISOString() })
+                .eq('user_id', userId);
+        } catch (updateError) {
+            console.warn('Failed to update last login time:', updateError);
+            // Продолжаем работу даже если не удалось обновить время
+        }
 
         currentUser = {
             id: userData.user_id,
@@ -84,8 +91,9 @@ export async function initializeUser() {
         return currentUser;
     } catch (error) {
         console.error('Error initializing user:', error);
-        sessionStorage.clear();
-        window.location.href = 'login.html';
+        if (error.message === 'Network error') {
+            throw error; // Пробрасываем ошибку сети выше
+        }
         return null;
     }
 }
