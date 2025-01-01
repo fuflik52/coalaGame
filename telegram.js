@@ -21,17 +21,18 @@ class TelegramAuth {
     }
 
     async initTelegramAuth() {
-        // Инициализируем пользователя
-        const user = await initializeUser();
-        
-        // Обновляем UI
-        this.updateUserInterface(user);
+        try {
+            // Инициализируем пользователя
+            const user = await initializeUser();
+            
+            // Обновляем UI
+            this.updateUserInterface(user);
 
-        // Логируем события Telegram Web App
-        console.log('[Telegram.WebApp] Initialized');
-        tg.onEvent('viewportChanged', () => {
-            console.log('[Telegram.WebApp] Viewport changed');
-        });
+            // Логируем события Telegram Web App
+            console.log('[Telegram.WebApp] Initialized with user:', user);
+        } catch (error) {
+            console.error('[Telegram.WebApp] Initialization error:', error);
+        }
     }
 
     updateUserInterface(user) {
@@ -43,8 +44,12 @@ class TelegramAuth {
 
         // Обновляем аватар, если есть
         const userIcon = document.querySelector('.user-icon');
-        if (userIcon && user.avatar) {
-            userIcon.src = user.avatar;
+        if (userIcon) {
+            if (user.avatar) {
+                userIcon.src = user.avatar;
+            } else {
+                userIcon.src = 'https://i.postimg.cc/vBBWGZjL/image.png'; // дефолтный аватар
+            }
         }
     }
 
@@ -204,7 +209,7 @@ function vibrate(duration = 20) {
 }
 
 // Добавляем вибрацию на все кликабельные элементы
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.telegramAuth.checkExistingAuth();
     
     const clickableElements = document.querySelectorAll('button, .nav-item, .clickable');

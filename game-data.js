@@ -5,27 +5,53 @@ let currentUser = null;
 // Инициализация пользователя
 export async function initializeUser() {
     const tg = window.Telegram?.WebApp;
+    
+    // Проверяем, есть ли сохраненный ID пользователя
+    const savedUserId = localStorage.getItem('userId');
+    
     if (tg?.initDataUnsafe?.user) {
         // Если пользователь из Telegram
         const telegramUser = tg.initDataUnsafe.user;
+        const telegramId = `tg-${telegramUser.id}`;
+        
+        // Если ID изменился или его нет, обновляем
+        if (savedUserId !== telegramId) {
+            localStorage.setItem('userId', telegramId);
+        }
+        
         currentUser = {
-            id: `tg-${telegramUser.id}`,
-            username: telegramUser.username || telegramUser.first_name || 'Гость',
-            avatar: telegramUser.photo_url
+            id: telegramId,
+            username: telegramUser.username || telegramUser.first_name || 'Пользователь Telegram',
+            avatar: telegramUser.photo_url,
+            isTelegram: true
         };
     } else {
         // Если обычный пользователь
-        const guestId = localStorage.getItem('guestId') || `guest-${Date.now()}`;
-        localStorage.setItem('guestId', guestId);
-        currentUser = {
-            id: guestId,
-            username: 'Гость',
-            avatar: null
-        };
+        if (!savedUserId || !savedUserId.startsWith('guest-')) {
+            const guestId = `guest-${Date.now()}`;
+            localStorage.setItem('userId', guestId);
+            currentUser = {
+                id: guestId,
+                username: 'Гость',
+                avatar: null,
+                isTelegram: false
+            };
+        } else {
+            currentUser = {
+                id: savedUserId,
+                username: 'Гость',
+                avatar: null,
+                isTelegram: false
+            };
+        }
     }
     
     // Получаем или создаем данные игрока
-    await getPlayerData(currentUser.id);
+    const playerData = await getPlayerData(currentUser.id);
+    if (playerData) {
+        currentUser.username = playerData.username || currentUser.username;
+    }
+    
     return currentUser;
 }
 
@@ -60,7 +86,7 @@ async function createNewPlayer(userId) {
         .insert([
             {
                 user_id: userId,
-                username: currentUser?.username || 'Гость',
+                username: currentUser.username,
                 balance: 0,
                 upgrades: {},
                 last_login: new Date().toISOString()
@@ -69,7 +95,10 @@ async function createNewPlayer(userId) {
         .select()
         .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error('Ошибка при создании игрока:', error);
+        return null;
+    }
     return data;
 }
 
@@ -84,7 +113,10 @@ export async function updatePlayerData(userId, updates) {
         .eq('user_id', userId)
         .select();
 
-    if (error) throw error;
+    if (error) {
+        console.error('Ошибка при обновлении данных игрока:', error);
+        return null;
+    }
     return data[0];
 }
 
