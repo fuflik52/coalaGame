@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loading - Koala Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.1"></script>
+    <script type="module" src="supabase-config.js"></script>
+    <script type="module" src="game-data.js"></script>
     <style>
         body {
             margin: 0;
@@ -126,70 +129,80 @@
 </head>
 <body>
     <div class="loading-container">
-        <img src="https://i.postimg.cc/ZnggtH7v/image.png" alt="Koala" class="koala-image">
-        <div class="loading-text">LOADING</div>
-        <div class="progress-bar">
-            <div class="progress-bar-fill"></div>
-        </div>
+        <img src="https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/koala_loading_vrqmze.png" alt="Koala" class="koala-image">
+        <div class="loading-text">Загрузка игры...</div>
         <div class="loading-steps">
-            <div class="step" id="step1">Загрузка ресурсов...</div>
-            <div class="step" id="step2">Подготовка интерфейса...</div>
-            <div class="step" id="step3">Инициализация игры...</div>
-            <div class="step" id="step4">Почти готово...</div>
+            <div class="step" data-step="1">Загрузка ресурсов...</div>
+            <div class="step" data-step="2">Подготовка интерфейса...</div>
+            <div class="step" data-step="3">Проверка аккаунта...</div>
+            <div class="step" data-step="4">Инициализация игры...</div>
+            <div class="step" data-step="5">Почти готово...</div>
         </div>
     </div>
-    <script>
-        let currentStep = 1;
-        const totalSteps = 4;
-        const stepDelay = 1500;
-        
+
+    <script type="module">
+        import { supabase } from './supabase-config.js';
+        import { getPlayerData } from './game-data.js';
+
         function showStep(stepNumber) {
-            const step = document.getElementById(`step${stepNumber}`);
-            step.classList.add('visible');
-            setTimeout(() => {
-                step.classList.add('active');
-            }, 100);
+            const step = document.querySelector(`[data-step="${stepNumber}"]`);
+            if (step) {
+                step.classList.add('visible');
+                setTimeout(() => {
+                    step.classList.add('active');
+                }, 100);
+            }
         }
 
         function completeStep(stepNumber) {
-            const step = document.getElementById(`step${stepNumber}`);
-            step.classList.add('completed');
+            const step = document.querySelector(`[data-step="${stepNumber}"]`);
+            if (step) {
+                step.classList.add('completed');
+            }
         }
 
-        function updateProgressBar(progress) {
-            document.querySelector('.progress-bar-fill').style.width = `${progress}%`;
+        async function checkOrCreateAccount() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                const userId = user?.id || 'guest-' + Date.now();
+                await getPlayerData(userId);
+                return true;
+            } catch (error) {
+                console.error('Ошибка при проверке аккаунта:', error);
+                return false;
+            }
         }
 
-        function startLoading() {
+        async function startLoading() {
+            // Шаг 1: Загрузка ресурсов
             showStep(1);
-            
-            setTimeout(() => {
-                completeStep(1);
-                updateProgressBar(25);
-                showStep(2);
-                
-                setTimeout(() => {
-                    completeStep(2);
-                    updateProgressBar(50);
-                    showStep(3);
-                    
-                    setTimeout(() => {
-                        completeStep(3);
-                        updateProgressBar(75);
-                        showStep(4);
-                        
-                        setTimeout(() => {
-                            completeStep(4);
-                            updateProgressBar(100);
-                            
-                            setTimeout(() => {
-                                sessionStorage.setItem('loaded', 'true');
-                                window.location.href = 'index.html';
-                            }, 1000);
-                        }, stepDelay);
-                    }, stepDelay);
-                }, stepDelay);
-            }, stepDelay);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            completeStep(1);
+
+            // Шаг 2: Подготовка интерфейса
+            showStep(2);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            completeStep(2);
+
+            // Шаг 3: Проверка аккаунта
+            showStep(3);
+            await checkOrCreateAccount();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            completeStep(3);
+
+            // Шаг 4: Инициализация игры
+            showStep(4);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            completeStep(4);
+
+            // Шаг 5: Завершение
+            showStep(5);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            completeStep(5);
+
+            // Переход на главную страницу
+            sessionStorage.setItem('loaded', 'true');
+            window.location.href = 'index.html';
         }
 
         window.onload = startLoading;
