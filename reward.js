@@ -1,54 +1,37 @@
-import { getPlayerData, updatePlayerData, getCurrentUser, getBalance } from './game-data.js';
+import { getPlayerData, updatePlayerData, getCurrentUser } from './game-data.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
     // Получаем текущего пользователя
     const currentUser = getCurrentUser();
     if (!currentUser) {
-        console.error('User not initialized');
+        window.location.href = 'login.html';
         return;
     }
-
-    console.log('Current user in reward.js:', currentUser);
 
     // Загружаем данные игрока
     let playerData = await getPlayerData(currentUser.id);
     if (!playerData) {
-        console.error('Player data not found');
+        window.location.href = 'login.html';
         return;
     }
-
-    console.log('Player data in reward.js:', playerData);
     
-    // Обновляем отображение баланса
-    function updateBalanceDisplay() {
-        const balanceElement = document.querySelector('.balance');
-        if (balanceElement) {
-            const currentBalance = getBalance();
-            balanceElement.textContent = currentBalance;
-            console.log('Updated balance display:', currentBalance);
-        }
-    }
-
     // Данные для reward items
     const rewardItems = [
         {
             title: 'Разработчики',
             points: 1000,
             image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
-            isDone: false
+            isDone: playerData.balance >= 1000
         },
         {
             title: 'Разработчики',
             points: 1000,
             image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
-            isDone: false
+            isDone: playerData.balance >= 1000
         }
     ];
 
     function createRewardItem(item) {
-        const currentBalance = getBalance();
-        item.isDone = currentBalance >= item.points;
-
         return `
             <div class="reward-item flex items-center justify-between bg-[#1A1B1A] rounded-xl p-4 cursor-pointer" data-points="${item.points}">
                 <div class="flex items-center gap-3">
@@ -82,7 +65,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!rewardSection) return;
 
         // Обновляем отображение баланса
-        updateBalanceDisplay();
+        const balanceElement = document.querySelector('.balance');
+        if (balanceElement) {
+            balanceElement.textContent = playerData.balance;
+        }
 
         // Очищаем текущее содержимое
         const rewardList = rewardSection.querySelector('.space-y-3');
@@ -107,13 +93,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Добавляем обработчик для обновления баланса
     async function updateBalance(points) {
-        if (!playerData) return;
-
-        const currentBalance = getBalance();
-        const newBalance = currentBalance + points;
+        const newBalance = playerData.balance + points;
         
-        console.log('Updating balance:', { currentBalance, newBalance, points });
-
         // Обновляем данные в базе
         const updatedData = await updatePlayerData(currentUser.id, {
             balance: newBalance
@@ -123,9 +104,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             playerData = updatedData;
             // Обновляем отображение
             initRewardSection();
-            console.log('Balance updated successfully');
-        } else {
-            console.error('Failed to update balance');
         }
     }
 
@@ -139,4 +117,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             initRewardSection();
         });
     }
+
+    // Добавляем кнопку выхода
+    const logoutButton = document.createElement('button');
+    logoutButton.textContent = 'Выйти';
+    logoutButton.className = 'logout-button';
+    logoutButton.addEventListener('click', () => {
+        sessionStorage.removeItem('userId');
+        sessionStorage.removeItem('username');
+        window.location.href = 'login.html';
+    });
+    document.body.appendChild(logoutButton);
 });
