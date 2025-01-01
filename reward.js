@@ -1,30 +1,54 @@
-import { getPlayerData, updatePlayerData, getCurrentUser } from './game-data.js';
+import { getPlayerData, updatePlayerData, getCurrentUser, getBalance } from './game-data.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
     // Получаем текущего пользователя
     const currentUser = getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.error('User not initialized');
+        return;
+    }
+
+    console.log('Current user in reward.js:', currentUser);
 
     // Загружаем данные игрока
     let playerData = await getPlayerData(currentUser.id);
+    if (!playerData) {
+        console.error('Player data not found');
+        return;
+    }
+
+    console.log('Player data in reward.js:', playerData);
     
+    // Обновляем отображение баланса
+    function updateBalanceDisplay() {
+        const balanceElement = document.querySelector('.balance');
+        if (balanceElement) {
+            const currentBalance = getBalance();
+            balanceElement.textContent = currentBalance;
+            console.log('Updated balance display:', currentBalance);
+        }
+    }
+
     // Данные для reward items
     const rewardItems = [
         {
             title: 'Разработчики',
             points: 1000,
             image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
-            isDone: playerData.balance >= 1000
+            isDone: false
         },
         {
             title: 'Разработчики',
             points: 1000,
             image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
-            isDone: playerData.balance >= 1000
+            isDone: false
         }
     ];
 
     function createRewardItem(item) {
+        const currentBalance = getBalance();
+        item.isDone = currentBalance >= item.points;
+
         return `
             <div class="reward-item flex items-center justify-between bg-[#1A1B1A] rounded-xl p-4 cursor-pointer" data-points="${item.points}">
                 <div class="flex items-center gap-3">
@@ -40,7 +64,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button class="px-6 py-2 rounded-full bg-white/10 text-white ${item.isDone ? 'completed' : ''}">
+                    <button class="px-6 py-2 rounded-full bg-white/10 text-white ${item.isDone ? 'completed' : ''}" ${item.isDone ? 'disabled' : ''}>
                         <div class="flex items-center gap-2">
                             ${item.isDone ? 'Completed' : 'Claim'}
                             ${item.isDone ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.3337 4L6.00033 11.3333L2.66699 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
@@ -58,10 +82,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!rewardSection) return;
 
         // Обновляем отображение баланса
-        const balanceElement = document.querySelector('.balance');
-        if (balanceElement && playerData) {
-            balanceElement.textContent = playerData.balance;
-        }
+        updateBalanceDisplay();
 
         // Очищаем текущее содержимое
         const rewardList = rewardSection.querySelector('.space-y-3');
@@ -71,12 +92,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Добавляем обработчики для reward items
             const items = rewardList.querySelectorAll('.reward-item');
             items.forEach(item => {
-                item.addEventListener('click', async () => {
-                    const points = parseInt(item.dataset.points);
-                    if (!isNaN(points)) {
-                        await updateBalance(points);
-                    }
-                });
+                const button = item.querySelector('button');
+                if (button && !button.disabled) {
+                    item.addEventListener('click', async () => {
+                        const points = parseInt(item.dataset.points);
+                        if (!isNaN(points)) {
+                            await updateBalance(points);
+                        }
+                    });
+                }
             });
         }
     }
@@ -85,8 +109,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function updateBalance(points) {
         if (!playerData) return;
 
-        const newBalance = (playerData.balance || 0) + points;
+        const currentBalance = getBalance();
+        const newBalance = currentBalance + points;
         
+        console.log('Updating balance:', { currentBalance, newBalance, points });
+
         // Обновляем данные в базе
         const updatedData = await updatePlayerData(currentUser.id, {
             balance: newBalance
@@ -96,6 +123,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             playerData = updatedData;
             // Обновляем отображение
             initRewardSection();
+            console.log('Balance updated successfully');
+        } else {
+            console.error('Failed to update balance');
         }
     }
 
