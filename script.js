@@ -11,63 +11,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const maxEnergy = 100;
     const energyPerClick = 1;
     const energyRegenRate = 1;
-    let totalHourlyRate = 10;
-    let purchasedCards = []; // Массив для хранения купленных карт
-
-    // Глобальные переменные
-    let gameInterval;
-    let lastUpdate = Date.now();
-    let currentProgress = {
-        balance: 0,
-        energy: 100,
-        hourly_rate: 10
-    };
+    window.totalHourlyRate = 10;
+    window.purchasedCards = []; // Массив для хранения купленных карт
 
     // Функция для сохранения данных
-    async function saveGameData() {
-        try {
-            // Сначала пытаемся сохранить в базу данных
-            if (window.tg && window.tg.initDataUnsafe && window.tg.initDataUnsafe.user) {
-                // await gameDB.updateBalance(clickCount);
-                // await gameDB.updateEnergy(energy);
-            }
-        } catch (error) {
-            console.error('Error saving to database:', error);
-        }
-
-        // В любом случае сохраняем локально как резервную копию
+    function saveGameData() {
         localStorage.setItem('balance', clickCount);
-        localStorage.setItem('purchasedCards', JSON.stringify(purchasedCards));
+        localStorage.setItem('purchasedCards', JSON.stringify(window.purchasedCards));
         localStorage.setItem('energy', energy);
     }
 
     // Функция для загрузки сохраненных данных
-    async function loadGameData() {
-        try {
-            // Сначала пытаемся загрузить из базы данных
-            if (window.tg && window.tg.initDataUnsafe && window.tg.initDataUnsafe.user) {
-                // await gameDB.initUser(tg.initDataUnsafe.user);
-                // const progress = await gameDB.initProgress();
-                // if (progress) {
-                //     clickCount = progress.balance;
-                //     energy = progress.energy;
-                //     balanceElement.textContent = Math.floor(clickCount);
-                //     updateEnergy();
-                // }
-
-                // Загружаем купленные карточки
-                // const dbPurchasedCards = await gameDB.getPurchasedCards();
-                // if (dbPurchasedCards.length > 0) {
-                //     purchasedCards = dbPurchasedCards;
-                //     updateTotalHourlyRate();
-                // }
-                return;
-            }
-        } catch (error) {
-            console.error('Error loading from database:', error);
-        }
-
-        // Если не удалось загрузить из базы, используем localStorage
+    function loadGameData() {
         const savedBalance = localStorage.getItem('balance');
         const savedPurchasedCards = localStorage.getItem('purchasedCards');
         const savedEnergy = localStorage.getItem('energy');
@@ -78,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (savedPurchasedCards) {
-            purchasedCards = JSON.parse(savedPurchasedCards);
+            window.purchasedCards = JSON.parse(savedPurchasedCards);
         }
 
         if (savedEnergy) {
@@ -101,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (userData) {
             clickCount = Number(userData.balance) || 0;
             energy = Number(userData.energy) || 100;
-            purchasedCards = userData.purchasedItems || [];
+            window.purchasedCards = userData.purchasedItems || [];
             // Обновляем все значения на странице
             updateTotalHourlyRate();
             updateEnergy();
@@ -111,34 +66,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Функция для обновления общей почасовой прибыли
-    async function updateTotalHourlyRate() {
-        try {
-            // Пытаемся получить часовой доход из базы данных
-            if (window.tg && window.tg.initDataUnsafe && window.tg.initDataUnsafe.user) {
-                // const dbRate = await gameDB.calculateHourlyRate();
-                // totalHourlyRate = dbRate;
-            } else {
-                totalHourlyRate = 10; // Базовая прибыль
-                if (purchasedCards && purchasedCards.length > 0) {
-                    purchasedCards.forEach(card => {
-                        totalHourlyRate += Number(card.perHour);
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Error calculating hourly rate:', error);
-            // В случае ошибки считаем локально
-            totalHourlyRate = 10;
-            if (purchasedCards && purchasedCards.length > 0) {
-                purchasedCards.forEach(card => {
-                    totalHourlyRate += Number(card.perHour);
-                });
-            }
+    function updateTotalHourlyRate() {
+        window.totalHourlyRate = 10; // Базовая прибыль
+        if (window.purchasedCards && window.purchasedCards.length > 0) {
+            window.purchasedCards.forEach(card => {
+                window.totalHourlyRate += Number(card.perHour);
+            });
         }
-
         const rateElement = document.querySelector('.user-info .rate');
         if (rateElement) {
-            rateElement.textContent = `${totalHourlyRate}/hour`;
+            rateElement.textContent = `${window.totalHourlyRate}/hour`;
         }
         // Сохраняем данные
         if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
@@ -148,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обновление баланса каждую секунду
     setInterval(() => {
-        const increment = Number(totalHourlyRate || 0) / 3600;
+        const increment = Number(window.totalHourlyRate || 0) / 3600;
         clickCount = Number(clickCount) + Number(increment);
         balanceElement.textContent = Math.floor(clickCount);
         // Сохраняем текущий баланс
@@ -235,19 +172,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Добавляем обработку покупки карточки
-    async function handleCardPurchase(card) {
-        try {
-            if (window.tg && window.tg.initDataUnsafe && window.tg.initDataUnsafe.user) {
-                // await gameDB.purchaseCard(card.id);
-            }
-        } catch (error) {
-            console.error('Error saving purchase to database:', error);
-        }
-
-        // В любом случае обновляем локальное состояние
+    function handleCardPurchase(card) {
         if (window.telegramAuth) {
             window.telegramAuth.addPurchasedItem(card);
-            purchasedCards = window.telegramAuth.purchasedItems;
+            window.purchasedCards = window.telegramAuth.purchasedItems;
             updateTotalHourlyRate();
         }
     }
@@ -467,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://res.cloudinary.com/dib4woqge/image/upload/v1735300135/1000000472_wu48p4.png",
                 title: "Начало пути",
                 description: "Коала только начинает своё путешествие. Даёт 120 эвкалипта в час",
-                price: "1",
+                price: "10000",
                 perHour: 120
             },
             {
@@ -475,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://i.postimg.cc/sxpJmh0S/image.png",
                 title: "Первые деньги",
                 description: "Коала заработала свои первые деньги. Продолжаем в том же духе. Добавляет 350 эвкалипта в час",
-                price: "1",
+                price: "25000",
                 perHour: 350
             },
 
@@ -484,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://i.postimg.cc/pVwWnFHC/image.png",
                 title: "Коала на отдыхе",
                 description: "После первых заработанных денег можно хорошенько отдохнуть. Добавляет 800 эвкалипта в час",
-                price: "1",
+                price: "35000",
                 perHour: 800
             },
             {
@@ -492,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://i.postimg.cc/nLCgk3KD/image.png",
                 title: "Снежные забавы",
                 description: "Наступила зима, а значит можно хорошо порезвиться в снежки. Но не забываем про прибыль в 1800 эвкалипта в час",
-                price: "1",
+                price: "50000",
                 perHour: 1800
             },
             {
@@ -500,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://i.postimg.cc/wTxjfh3V/Leonardo-Phoenix-10-A-vibrant-whimsical-illustration-of-Koala-2.jpg",
                 title: "Коала-путешественник",
                 description: "Наша коала отправляется в кругосветное путешествие, собирая эвкалипт по всему миру. Приносит 3500 эвкалипта в час",
-                price: "1",
+                price: "75000",
                 perHour: 3500,
                 isNew: true
             },
@@ -509,7 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://i.postimg.cc/3JnrGd8c/Leonardo-Phoenix-10-A-whimsical-digital-illustration-of-a-koal-0.jpg",
                 title: "Бизнес-коала",
                 description: "Пора открывать свой бизнес! Коала в деловом костюме управляет сетью эвкалиптовых плантаций. Добавляет 7000 эвкалипта в час",
-                price: "1",
+                price: "100000",
                 perHour: 7000,
                 isNew: true
             },
@@ -518,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://i.postimg.cc/zvqbJ67b/Leonardo-Phoenix-10-A-vibrant-whimsical-illustration-of-Space-0.jpg",
                 title: "Космический исследователь",
                 description: "Коала покоряет космос в поисках редких видов эвкалипта на других планетах. Приносит 12000 эвкалипта в час",
-                price: "1",
+                price: "150000",
                 perHour: 12000,
                 isNew: true
             },
@@ -527,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 image: "https://i.postimg.cc/bv23bSh0/Leonardo-Phoenix-10-In-a-whimsical-vibrant-illustration-depict-0.jpg",
                 title: "Коала-волшебник",
                 description: "Магия и эвкалипт - отличное сочетание! Коала освоила древние заклинания приумножения эвкалипта. Добавляет 20000 эвкалипта в час",
-                price: "1",
+                price: "200000",
                 perHour: 20000,
                 isNew: true
             }
@@ -539,7 +467,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cardElement.className = 'card-item';
 
             // Проверяем, была ли карточка куплена ранее
-            const isPurchased = purchasedCards.some(pc => pc.id === card.id);
+            const isPurchased = window.purchasedCards.some(pc => pc.id === card.id);
             
             cardElement.innerHTML = `
                 <div class="card-image">
@@ -584,8 +512,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // Добавляем карту в купленные
                         const cardData = cardsData.find(c => c.id === cardId);
-                        if (cardData && !purchasedCards.some(pc => pc.id === cardId)) {
-                            purchasedCards.push(cardData);
+                        if (cardData && !window.purchasedCards.some(pc => pc.id === cardId)) {
+                            window.purchasedCards.push(cardData);
                             updateOwnedCards();
                             handleCardPurchase(cardData);
                             // Обновляем общую прибыль в час
@@ -610,13 +538,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Функция обновления списка купленных карт
         function updateOwnedCards() {
             ownedCardsContainer.innerHTML = '';
-            if (!purchasedCards || purchasedCards.length === 0) {
+            if (!window.purchasedCards || window.purchasedCards.length === 0) {
                 const emptyMessage = document.createElement('div');
                 emptyMessage.className = 'empty-message';
                 emptyMessage.textContent = 'У вас пока нет купленных карт';
                 ownedCardsContainer.appendChild(emptyMessage);
             } else {
-                purchasedCards.forEach(card => {
+                window.purchasedCards.forEach(card => {
                     ownedCardsContainer.appendChild(createCardElement(card, true));
                 });
             }
@@ -682,143 +610,4 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelector('.container').insertBefore(section, document.querySelector('.bottom-nav'));
         return section;
     }
-
-    // Инициализация игры
-    async function initGame() {
-        let user;
-        
-        if (window.gameDB.isTelegramUser()) {
-            // Для пользователей Telegram
-            user = await window.gameDB.getCurrentUser();
-        } else {
-            // Для обычных пользователей
-            user = await window.gameDB.getCurrentUser();
-        }
-
-        if (!user) {
-            console.error('Failed to initialize user');
-            return;
-        }
-
-        // Загружаем прогресс
-        const progress = await window.gameDB.getUserProgress();
-        if (progress) {
-            updateUI(progress);
-        }
-
-        // Запускаем игровой цикл
-        if (gameInterval) {
-            clearInterval(gameInterval);
-        }
-        gameInterval = setInterval(gameLoop, 1000);
-
-    }
-
-    // Обновление интерфейса
-    function updateUI(progress) {
-        // Обновляем отображение баланса
-        const balanceElement = document.querySelector('.balance');
-        if (balanceElement) {
-            balanceElement.textContent = progress.balance;
-        }
-
-        // Обновляем отображение энергии
-        const energyElement = document.querySelector('.progress-text');
-        if (energyElement) {
-            energyElement.textContent = `${progress.energy}/100`;
-        }
-
-        // Обновляем прогресс-бар
-        const progressBar = document.querySelector('.progress');
-        if (progressBar) {
-            progressBar.style.width = `${progress.energy}%`;
-        }
-
-        // Обновляем почасовую ставку
-        const rateElement = document.querySelector('.rate');
-        if (rateElement) {
-            rateElement.textContent = `${progress.hourly_rate || 10}/hour`;
-        }
-    }
-
-    // Игровой цикл
-    async function gameLoop() {
-        const now = Date.now();
-        const deltaTime = (now - lastUpdate) / 1000; // в секундах
-        lastUpdate = now;
-
-        // Обновляем баланс
-        if (currentProgress.energy > 0) {
-            const earnedTokens = (currentProgress.hourly_rate / 3600) * deltaTime;
-            currentProgress.balance += earnedTokens;
-            
-            // Обновляем отображение баланса
-            document.querySelector('.balance').textContent = Math.floor(currentProgress.balance);
-            
-            // Каждые 30 секунд сохраняем прогресс
-            if (Math.floor(now / 30000) > Math.floor((now - deltaTime * 1000) / 30000)) {
-                await window.gameDB.updateBalance(currentProgress.balance);
-            }
-        }
-
-        // Обновляем энергию
-        if (currentProgress.energy > 0) {
-            currentProgress.energy -= (100 / (4 * 3600)) * deltaTime; // Полная энергия тратится за 4 часа
-            if (currentProgress.energy < 0) currentProgress.energy = 0;
-            
-            // Обновляем отображение энергии
-            updateEnergyBar(currentProgress.energy);
-            
-            // Каждые 30 секунд сохраняем энергию
-            if (Math.floor(now / 30000) > Math.floor((now - deltaTime * 1000) / 30000)) {
-                await window.gameDB.updateEnergy(currentProgress.energy);
-            }
-        }
-    }
-
-    // Обновление полосы энергии
-    function updateEnergyBar(energy) {
-        const energyText = document.querySelector('.progress-text');
-        const energyBar = document.querySelector('.progress');
-        
-        // Обновляем текст
-        energyText.textContent = `${Math.floor(energy)}/100`;
-        
-        // Обновляем полосу
-        energyBar.style.width = `${energy}%`;
-    }
-
-    // Инициализация при загрузке страницы
-    document.addEventListener('DOMContentLoaded', initGame);
-
-    // Обработчики навигации
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Убираем активный класс у всех элементов
-            document.querySelectorAll('.nav-item').forEach(navItem => {
-                navItem.classList.remove('active');
-            });
-            
-            // Добавляем активный класс текущему элементу
-            this.classList.add('active');
-            
-            // Получаем секцию для отображения
-            const section = this.dataset.section;
-            
-            // Скрываем все секции
-            document.querySelector('.game-area').style.display = 'none';
-            document.querySelector('.progress-container').style.display = 'none';
-            document.querySelector('.reward-section').style.display = 'none';
-            
-            // Показываем нужную секцию
-            if (section === 'home') {
-                document.querySelector('.game-area').style.display = 'block';
-                document.querySelector('.progress-container').style.display = 'block';
-            } else if (section === 'reward') {
-                document.querySelector('.reward-section').style.display = 'block';
-            }
-        });
-    });
 });

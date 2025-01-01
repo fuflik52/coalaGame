@@ -1,23 +1,29 @@
-document.addEventListener('DOMContentLoaded', function() {
+import { getPlayerData, updatePlayerData } from './game-data.js';
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Загружаем данные игрока
+    const userId = 'test123'; // В реальном приложении здесь будет ID пользователя
+    let playerData = await getPlayerData(userId);
+    
     // Данные для reward items
     const rewardItems = [
         {
             title: 'Разработчики',
             points: 1000,
             image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
-            isDone: true
+            isDone: playerData.balance >= 1000
         },
         {
             title: 'Разработчики',
             points: 1000,
             image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
-            isDone: true
+            isDone: playerData.balance >= 1000
         }
     ];
 
     function createRewardItem(item) {
         return `
-            <div class="flex items-center justify-between bg-[#1A1B1A] rounded-xl p-4 cursor-pointer">
+            <div class="flex items-center justify-between bg-[#1A1B1A] rounded-xl p-4 cursor-pointer" data-points="${item.points}">
                 <div class="flex items-center gap-3">
                     <div class="w-[45px] h-[45px] bg-[#262626] rounded-md">
                         <img src="${item.image}" alt="task" class="w-full h-full object-cover p-1 rounded-lg">
@@ -68,4 +74,25 @@ document.addEventListener('DOMContentLoaded', function() {
             initRewardSection();
         });
     }
+
+    // Добавляем обработчик для обновления баланса
+    async function updateBalance(points) {
+        playerData.balance = (playerData.balance || 0) + points;
+        await updatePlayerData(userId, {
+            balance: playerData.balance,
+            upgrades: playerData.upgrades
+        });
+        // Обновляем отображение
+        initRewardSection();
+    }
+
+    // Добавляем обработчик клика на reward items
+    document.querySelectorAll('.reward-item').forEach(item => {
+        item.addEventListener('click', async () => {
+            const points = parseInt(item.dataset.points);
+            if (!isNaN(points)) {
+                await updateBalance(points);
+            }
+        });
+    });
 });
