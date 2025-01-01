@@ -4,9 +4,13 @@
 // Импортируем функции для работы с данными пользователя
 import { initializeUser, getCurrentUser } from './game-data.js';
 
-// Инициализируем Telegram Web App
-const tg = window.Telegram.WebApp;
-tg.expand();
+// Проверяем, запущено ли приложение в Telegram
+const isTelegram = window.Telegram && window.Telegram.WebApp;
+const tg = isTelegram ? window.Telegram.WebApp : null;
+
+if (isTelegram) {
+    tg.expand();
+}
 
 class TelegramAuth {
     constructor() {
@@ -28,28 +32,35 @@ class TelegramAuth {
             // Обновляем UI
             this.updateUserInterface(user);
 
-            // Логируем события Telegram Web App
-            console.log('[Telegram.WebApp] Initialized with user:', user);
+            if (isTelegram) {
+                console.log('[Telegram.WebApp] Initialized with user:', user);
+            } else {
+                console.log('[Browser] Initialized with user:', user);
+            }
         } catch (error) {
-            console.error('[Telegram.WebApp] Initialization error:', error);
+            console.error('Initialization error:', error);
         }
     }
 
     updateUserInterface(user) {
+        if (!user) return;
+        
         // Обновляем имя пользователя на странице
         const usernameElement = document.querySelector('.username');
         if (usernameElement) {
             usernameElement.textContent = user.username;
         }
 
+        // Обновляем баланс
+        const balanceElement = document.querySelector('.balance');
+        if (balanceElement) {
+            balanceElement.textContent = user.balance || '0';
+        }
+
         // Обновляем аватар, если есть
         const userIcon = document.querySelector('.user-icon');
         if (userIcon) {
-            if (user.avatar) {
-                userIcon.src = user.avatar;
-            } else {
-                userIcon.src = 'https://i.postimg.cc/vBBWGZjL/image.png'; // дефолтный аватар
-            }
+            userIcon.src = user.avatar || 'https://i.postimg.cc/vBBWGZjL/image.png';
         }
     }
 
@@ -162,23 +173,9 @@ class TelegramAuth {
 
     // Проверяем, был ли пользователь уже авторизован
     checkExistingAuth() {
-        const savedData = localStorage.getItem('userData');
-        if (savedData) {
-            const data = JSON.parse(savedData);
-            this.username = data.username;
-            this.telegramId = data.telegramId;
-            this.isAuthenticated = true;
-            this.purchasedItems = data.purchasedCards || [];
-            this.balance = data.balance || 0;
-            this.energy = data.energy || 100;
-            
-            const usernameElement = document.querySelector('.username');
-            if (usernameElement) {
-                usernameElement.textContent = this.username;
-            }
-            return true;
-        }
-        return false;
+        const userId = sessionStorage.getItem('userId');
+        const username = sessionStorage.getItem('username');
+        return !!(userId && username);
     }
 
     // Выход из аккаунта
@@ -203,17 +200,19 @@ window.telegramAuth = new TelegramAuth();
 
 // Функция для вибрации на мобильных устройствах
 function vibrate(duration = 20) {
-    if (tg.platform === 'android' || tg.platform === 'ios') {
-        window.navigator.vibrate(duration);
+    if (isTelegram) {
+        tg.HapticFeedback.impactOccurred('light');
+    } else if (navigator.vibrate) {
+        navigator.vibrate(duration);
     }
 }
 
 // Добавляем вибрацию на все кликабельные элементы
 document.addEventListener('DOMContentLoaded', async () => {
-    window.telegramAuth.checkExistingAuth();
-    
-    const clickableElements = document.querySelectorAll('button, .nav-item, .clickable');
-    clickableElements.forEach(element => {
+    const isAuth = window.telegramAuth.checkExistingAuth();
+    if (!isAuth) return;
+
+    document.querySelectorAll('button, .nav-item, .clickable').forEach(element => {
         element.addEventListener('click', () => vibrate());
     });
 });

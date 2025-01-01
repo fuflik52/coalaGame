@@ -3,6 +3,10 @@ import { supabase } from './supabase-config.js';
 // Функция для входа
 async function login(username, password) {
     try {
+        if (!username || !password) {
+            throw new Error('Пожалуйста, заполните все поля');
+        }
+
         // Получаем пользователя по имени
         const { data: user, error } = await supabase
             .from('players')
@@ -12,6 +16,9 @@ async function login(username, password) {
 
         if (error) {
             console.error('Login error:', error);
+            if (error.message.includes('network') || error.message.includes('connection')) {
+                throw new Error('Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение');
+            }
             throw new Error('Неверное имя пользователя или пароль');
         }
 
@@ -23,18 +30,23 @@ async function login(username, password) {
         sessionStorage.setItem('userId', user.user_id);
         sessionStorage.setItem('username', user.username);
 
-        // Обновляем время последнего входа
-        await supabase
-            .from('players')
-            .update({ last_login: new Date().toISOString() })
-            .eq('user_id', user.user_id);
+        try {
+            // Обновляем время последнего входа
+            await supabase
+                .from('players')
+                .update({ last_login: new Date().toISOString() })
+                .eq('user_id', user.user_id);
+        } catch (updateError) {
+            console.warn('Failed to update last login time:', updateError);
+            // Продолжаем работу даже если не удалось обновить время
+        }
 
         // Перенаправляем на страницу загрузки
         window.location.href = 'loading.html';
     } catch (error) {
         console.error('Login error:', error);
         showError(error.message);
-        throw error; // Прокидываем ошибку дальше
+        throw error;
     }
 }
 
@@ -54,11 +66,18 @@ async function register(username, password) {
         }
 
         // Проверяем, существует ли пользователь
-        const { data: existingUser } = await supabase
+        const { data: existingUser, error: checkError } = await supabase
             .from('players')
             .select('username')
             .eq('username', username)
             .maybeSingle();
+
+        if (checkError) {
+            if (checkError.message.includes('network') || checkError.message.includes('connection')) {
+                throw new Error('Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение');
+            }
+            throw new Error('Ошибка при проверке пользователя');
+        }
 
         if (existingUser) {
             throw new Error('Пользователь с таким именем уже существует');
@@ -70,7 +89,8 @@ async function register(username, password) {
             username: username,
             password: password,
             balance: 0,
-            upgrades: {}
+            upgrades: {},
+            last_login: new Date().toISOString()
         };
 
         const { error: createError } = await supabase
@@ -79,15 +99,22 @@ async function register(username, password) {
 
         if (createError) {
             console.error('Registration error:', createError);
+            if (createError.message.includes('network') || createError.message.includes('connection')) {
+                throw new Error('Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение');
+            }
             throw new Error('Ошибка при создании пользователя');
         }
 
-        // Выполняем вход с новыми данными
-        await login(username, password);
+        // Сохраняем данные пользователя в сессии
+        sessionStorage.setItem('userId', newUser.user_id);
+        sessionStorage.setItem('username', newUser.username);
+
+        // Перенаправляем на страницу загрузки
+        window.location.href = 'loading.html';
     } catch (error) {
         console.error('Registration error:', error);
         showError(error.message);
-        throw error; // Прокидываем ошибку дальше
+        throw error;
     }
 }
 
@@ -104,25 +131,33 @@ function showError(message) {
 }
 
 // Обработчики событий
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    try {
-        await login(username, password);
-    } catch (error) {
-        // Ошибка уже обработана в функции login
-        console.error('Login form error:', error);
-    }
-});
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
 
-document.getElementById('registerButton').addEventListener('click', async () => {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    try {
-        await register(username, password);
-    } catch (error) {
-        // Ошибка уже обработана в функции register
-        console.error('Register button error:', error);
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            try {
+                await login(username, password);
+            } catch (error) {
+                // Ошибка уже обработана в login()
+            }
+        });
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            try {
+                await register(username, password);
+            } catch (error) {
+                // Ошибка уже обработана в register()
+            }
+        });
     }
 });
