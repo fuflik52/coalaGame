@@ -9,10 +9,36 @@
         import { supabase } from './supabase-config.js';
         import { initializeUser } from './game-data.js';
 
-        // Проверяем авторизацию
-        const userId = sessionStorage.getItem('userId');
-        if (!userId) {
-            window.location.href = 'login.html';
+        async function checkAuth() {
+            const userId = sessionStorage.getItem('userId');
+            const username = sessionStorage.getItem('username');
+
+            if (!userId || !username) {
+                window.location.href = 'login.html';
+                return false;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('players')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (error || !data) {
+                    console.error('Auth check error:', error);
+                    sessionStorage.clear();
+                    window.location.href = 'login.html';
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+                return false;
+            }
         }
 
         function showStep(stepNumber) {
@@ -32,48 +58,55 @@
             }
         }
 
-        async function checkOrCreateAccount() {
+        async function startLoading() {
             try {
-                await initializeUser();
-                return true;
+                // Проверяем авторизацию
+                const isAuth = await checkAuth();
+                if (!isAuth) return;
+
+                // Шаг 1: Загрузка ресурсов
+                showStep(1);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                completeStep(1);
+
+                // Шаг 2: Подготовка интерфейса
+                showStep(2);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                completeStep(2);
+
+                // Шаг 3: Проверка аккаунта
+                showStep(3);
+                const user = await initializeUser();
+                if (!user) {
+                    throw new Error('Failed to initialize user');
+                }
+                await new Promise(resolve => setTimeout(resolve, 300));
+                completeStep(3);
+
+                // Шаг 4: Инициализация игры
+                showStep(4);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                completeStep(4);
+
+                // Шаг 5: Завершение
+                showStep(5);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                completeStep(5);
+
+                // Небольшая задержка перед переходом
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Переход на главную страницу
+                window.location.replace('index.html');
             } catch (error) {
-                console.error('Ошибка при проверке аккаунта:', error);
-                return false;
+                console.error('Loading error:', error);
+                sessionStorage.clear();
+                window.location.href = 'login.html';
             }
         }
 
-        async function startLoading() {
-            // Шаг 1: Загрузка ресурсов
-            showStep(1);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            completeStep(1);
-
-            // Шаг 2: Подготовка интерфейса
-            showStep(2);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            completeStep(2);
-
-            // Шаг 3: Проверка аккаунта
-            showStep(3);
-            await checkOrCreateAccount();
-            await new Promise(resolve => setTimeout(resolve, 500));
-            completeStep(3);
-
-            // Шаг 4: Инициализация игры
-            showStep(4);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            completeStep(4);
-
-            // Шаг 5: Завершение
-            showStep(5);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            completeStep(5);
-
-            // Переход на главную страницу
-            window.location.href = 'index.html';
-        }
-
-        window.onload = startLoading;
+        // Запускаем загрузку при загрузке страницы
+        window.addEventListener('load', startLoading);
     </script>
     <style>
         body {
@@ -115,6 +148,8 @@
             transform: translateY(10px);
             transition: all 0.3s ease;
             display: none;
+            color: #ffffff;
+            font-size: 16px;
         }
 
         .step.visible {
