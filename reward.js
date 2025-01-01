@@ -20,13 +20,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         {
             title: 'Разработчики',
             points: 1000,
-            image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
+            image: 'https://i.postimg.cc/HnSVzqGF/image.png',
             isDone: playerData.balance >= 1000
         },
         {
             title: 'Разработчики',
             points: 1000,
-            image: 'https://res.cloudinary.com/dib4woqge/image/upload/v1735053105/photo_5397728990409647380_y_vrqmze.jpg',
+            image: 'https://i.postimg.cc/HnSVzqGF/image.png',
             isDone: playerData.balance >= 1000
         }
     ];

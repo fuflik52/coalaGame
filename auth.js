@@ -3,15 +3,19 @@ import { supabase } from './supabase-config.js';
 // Функция для входа
 async function login(username, password) {
     try {
-        // Получаем пользователя по имени
+        // Получаем пользователя по имени и паролю
         const { data: users, error: userError } = await supabase
             .from('players')
             .select('*')
             .eq('username', username)
-            .eq('password', password)
             .single();
 
-        if (userError) {
+        if (userError || !users) {
+            throw new Error('Неверное имя пользователя или пароль');
+        }
+
+        // Проверяем пароль
+        if (users.password !== password) {
             throw new Error('Неверное имя пользователя или пароль');
         }
 
@@ -30,9 +34,9 @@ async function login(username, password) {
 async function register(username, password) {
     try {
         // Проверяем, существует ли пользователь
-        const { data: existingUser } = await supabase
+        const { data: existingUser, error: checkError } = await supabase
             .from('players')
-            .select('*')
+            .select('username')
             .eq('username', username)
             .single();
 
@@ -40,27 +44,27 @@ async function register(username, password) {
             throw new Error('Пользователь с таким именем уже существует');
         }
 
+        // Создаем ID пользователя
+        const userId = `user_${Date.now()}`;
+
         // Создаем нового пользователя
         const { data: newUser, error: createError } = await supabase
             .from('players')
-            .insert([
-                {
-                    user_id: `user-${Date.now()}`,
-                    username: username,
-                    password: password,
-                    balance: 0,
-                    upgrades: {},
-                    last_login: new Date().toISOString()
-                }
-            ])
-            .select()
-            .single();
+            .insert({
+                user_id: userId,
+                username: username,
+                password: password,
+                balance: 0,
+                upgrades: {},
+                last_login: new Date().toISOString()
+            });
 
         if (createError) {
+            console.error('Registration error:', createError);
             throw new Error('Ошибка при создании пользователя');
         }
 
-        // Автоматически входим после регистрации
+        // Если регистрация успешна, выполняем вход
         await login(username, password);
     } catch (error) {
         showError(error.message);
