@@ -1,7 +1,10 @@
 import { supabase } from './supabase-config.js';
 
-// Настройка для пропуска экрана загрузки
-const SKIP_LOADING = true; // Измените на false, если хотите видеть экран загрузки
+// Настройки
+const SKIP_LOADING = true; // Пропускать экран загрузки
+const AUTO_LOGIN = true; // Автоматический вход
+const DEFAULT_USERNAME = "test"; // Логин для автоматического входа
+const DEFAULT_PASSWORD = "test"; // Пароль для автоматического входа
 
 // Функция для входа
 async function login(username, password) {
@@ -27,6 +30,10 @@ async function login(username, password) {
         const user = users && users.length > 0 ? users[0] : null;
 
         if (!user || user.password !== password) {
+            // Если включен автологин и пользователь не существует, регистрируем его
+            if (AUTO_LOGIN && username === DEFAULT_USERNAME && password === DEFAULT_PASSWORD) {
+                return await register(username, password);
+            }
             throw new Error('Неверное имя пользователя или пароль');
         }
 
@@ -143,11 +150,24 @@ function showError(message) {
 }
 
 // Обработчики событий
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Если включен автологин, выполняем вход автоматически
+    if (AUTO_LOGIN) {
+        try {
+            await login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+            return; // Прерываем выполнение, так как будет редирект
+        } catch (error) {
+            console.error('Auto-login failed:', error);
+            // Если автологин не удался, показываем формы входа
+        }
+    }
+
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
 
+    // Если автологин выключен или не удался, показываем формы
     if (loginForm) {
+        loginForm.style.display = 'flex';
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();

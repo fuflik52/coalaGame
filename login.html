@@ -32,7 +32,7 @@
         }
 
         .form-container {
-            display: flex;
+            display: none; /* Скрыто по умолчанию */
             flex-direction: column;
             gap: 15px;
         }
@@ -86,6 +86,12 @@
             animation: bounce 2s infinite;
         }
 
+        .loading-message {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #28a745;
+        }
+
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
@@ -104,8 +110,6 @@
 
         .active {
             display: flex;
-            flex-direction: column;
-            gap: 15px;
         }
     </style>
 </head>
@@ -113,8 +117,10 @@
     <div class="login-container">
         <img src="https://i.postimg.cc/HnSVzqGF/image.png" alt="Koala" class="koala-image">
         
+        <div class="loading-message">Подключение к игре...</div>
+
         <!-- Форма входа -->
-        <form class="form-container active" id="loginForm">
+        <form class="form-container" id="loginForm">
             <div class="input-group">
                 <label for="username">Имя пользователя</label>
                 <input type="text" id="username" name="username" required placeholder="Введите имя пользователя">
@@ -149,7 +155,9 @@
             const loginForm = document.getElementById('loginForm');
             const registerForm = document.getElementById('registerForm');
             const errorMessage = document.getElementById('errorMessage');
+            const loadingMessage = document.querySelector('.loading-message');
             
+            loadingMessage.style.display = 'none';
             errorMessage.style.display = 'none';
             
             if (type === 'register') {
