@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Устанавливаем данные пользователя по умолчанию
+    if (!sessionStorage.getItem('userId')) {
+        sessionStorage.setItem('userId', 'default_user');
+        sessionStorage.setItem('username', 'test');
+        sessionStorage.setItem('gameLoaded', 'true');
+    }
+
     const mainCircle = document.querySelector('.main-circle');
     const gameArea = document.querySelector('.game-area');
     const progressBar = document.querySelector('.progress');
@@ -50,21 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
         saveGameData();
     });
 
-    // Загружаем сохраненные данные при старте
-    if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-        const userData = window.telegramAuth.loadUserData();
-        if (userData) {
-            clickCount = Number(userData.balance) || 0;
-            energy = Number(userData.energy) || 100;
-            window.purchasedCards = userData.purchasedItems || [];
-            // Обновляем все значения на странице
-            updateTotalHourlyRate();
-            updateEnergy();
-            balanceElement.textContent = Math.floor(clickCount);
-            window.clickCount = clickCount; // Сохраняем в глобальную переменную
-        }
-    }
-
     // Функция для обновления общей почасовой прибыли
     function updateTotalHourlyRate() {
         window.totalHourlyRate = 10; // Базовая прибыль
@@ -77,10 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rateElement) {
             rateElement.textContent = `${window.totalHourlyRate}/hour`;
         }
-        // Сохраняем данные
-        if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-            window.telegramAuth.saveUserData();
-        }
     }
 
     // Обновление баланса каждую секунду
@@ -88,10 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const increment = Number(window.totalHourlyRate || 0) / 3600;
         clickCount = Number(clickCount) + Number(increment);
         balanceElement.textContent = Math.floor(clickCount);
-        // Сохраняем текущий баланс
-        if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-            window.telegramAuth.saveBalance(clickCount);
-        }
         saveGameData();
     }, 1000);
 
@@ -100,11 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (energy < maxEnergy) {
             energy = Math.min(maxEnergy, energy + energyRegenRate);
             updateEnergy();
-
-            // Сохраняем текущую энергию
-            if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-                window.telegramAuth.saveEnergy(energy);
-            }
             saveGameData();
         }
     }, 1000);
@@ -148,22 +127,19 @@ document.addEventListener('DOMContentLoaded', function() {
         collectBtn.addEventListener('click', () => {
             clickCount += amount;
             balanceElement.textContent = Math.floor(clickCount);
-            window.telegramAuth.updateLastCollectTime();
             popupDiv.remove();
         });
     }
 
     // Проверяем заработок при загрузке страницы
-    if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-        // const earnings = window.telegramAuth.getTimeAwayEarnings();
-        // if (earnings > 0) {
-        //     showEarningsPopup(earnings);
-        // }
-    }
+    // const earnings = window.telegramAuth.getTimeAwayEarnings();
+    // if (earnings > 0) {
+    //     showEarningsPopup(earnings);
+    // }
 
     // Обработчик видимости страницы
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && window.telegramAuth && window.telegramAuth.isAuthenticated) {
+        if (!document.hidden) {
             // const earnings = window.telegramAuth.getTimeAwayEarnings();
             // if (earnings > 0) {
             //     showEarningsPopup(earnings);
@@ -173,11 +149,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Добавляем обработку покупки карточки
     function handleCardPurchase(card) {
-        if (window.telegramAuth) {
-            window.telegramAuth.addPurchasedItem(card);
-            window.purchasedCards = window.telegramAuth.purchasedItems;
-            updateTotalHourlyRate();
-        }
+        window.purchasedCards = window.purchasedCards || [];
+        window.purchasedCards.push(card);
+        updateTotalHourlyRate();
     }
 
     // Функция для создания конфетти
@@ -328,10 +302,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         clickCount++;
         balanceElement.textContent = Math.floor(clickCount);
-        // Сохраняем баланс после клика
-        if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-            window.telegramAuth.saveBalance(clickCount);
-        }
         saveGameData();
     });
 
