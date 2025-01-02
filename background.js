@@ -7,15 +7,10 @@ let inactivityCheckInterval;
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     // Проверяем и начисляем офлайн-прибыль
-    updateBalanceWithOfflineEarnings(calculateOfflineEarnings());
+    addOfflineEarnings();
     
     // Запускаем периодическое начисление
-    setInterval(() => {
-        const earnings = calculateOfflineEarnings();
-        if (earnings > 0) {
-            updateBalanceWithOfflineEarnings(earnings);
-        }
-    }, 5000); // Каждые 5 секунд
+    setInterval(addOfflineEarnings, 5000); // Каждые 5 секунд
     
     // Запускаем отслеживание активности
     startInactivityCheck();
@@ -38,7 +33,7 @@ function startInactivityCheck() {
             isInactive = true;
             const earnings = calculateOfflineEarnings();
             if (earnings > 0) {
-                showOfflineEarningsNotification(earnings);
+                showOfflineEarnings(earnings);
             }
         }
     }, 1000); // Проверяем каждую секунду
@@ -50,58 +45,75 @@ function handleUserActivity() {
     isInactive = false;
 }
 
-// Функция для получения времени последнего визита
-function getLastVisitTime() {
-    return parseInt(localStorage.getItem('lastVisitTime')) || Date.now();
-}
-
-// Функция для получения текущей прибыли в час
-function getCurrentPerHour() {
-    return parseFloat(localStorage.getItem('hourlyRate')) || 0;
-}
-
-// Функция для расчета офлайн прибыли
-function calculateOfflineEarnings() {
-    const lastVisit = getLastVisitTime();
-    const currentTime = Date.now();
-    const hoursOffline = (currentTime - lastVisit) / (1000 * 60 * 60); // Конвертируем миллисекунды в часы
-    const perHour = getCurrentPerHour();
+// Функция для показа окна офлайн-прибыли
+function showOfflineEarnings(earnings) {
+    const offlineEarningsElement = document.getElementById('offlineEarnings');
+    const offlineAmountElement = document.getElementById('offlineAmount');
     
-    return Math.floor(hoursOffline * perHour);
-}
-
-// Обновляем баланс и показываем уведомление
-function updateBalanceWithOfflineEarnings(earnings) {
-    const currentBalance = parseFloat(localStorage.getItem('balance')) || 0;
-    const newBalance = currentBalance + earnings;
-    localStorage.setItem('balance', newBalance.toString());
-    
-    const balanceElement = document.querySelector('.balance');
-    if (balanceElement) {
-        balanceElement.textContent = Math.floor(newBalance).toString();
+    if (offlineEarningsElement && offlineAmountElement) {
+        offlineAmountElement.textContent = earnings.toFixed(2);
+        offlineEarningsElement.classList.add('visible');
     }
-    
+}
+
+// Функция для сбора офлайн-прибыли
+function collectOfflineEarnings() {
+    const offlineEarnings = calculateOfflineEarnings();
+    if (offlineEarnings > 0) {
+        // Обновляем баланс
+        const currentBalance = parseFloat(localStorage.getItem('balance')) || 0;
+        const newBalance = currentBalance + offlineEarnings;
+        localStorage.setItem('balance', newBalance.toString());
+        
+        // Обновляем отображение баланса
+        const balanceElement = document.querySelector('.balance');
+        if (balanceElement) {
+            balanceElement.textContent = newBalance.toFixed(2);
+        }
+
+        // Скрываем окно офлайн-прибыли
+        const offlineEarningsElement = document.getElementById('offlineEarnings');
+        if (offlineEarningsElement) {
+            offlineEarningsElement.classList.remove('visible');
+        }
+        
+        // Сохраняем новое время последнего визита
+        saveLastVisitTime();
+    }
+}
+
+// Функция для начисления прибыли
+function addOfflineEarnings() {
+    const earnings = calculateOfflineEarnings();
     if (earnings > 0) {
-        showOfflineEarningsNotification(earnings);
+        // Обновляем баланс
+        const currentBalance = parseFloat(localStorage.getItem('balance')) || 0;
+        const newBalance = currentBalance + earnings;
+        localStorage.setItem('balance', newBalance.toString());
+        
+        // Обновляем отображение баланса если страница открыта
+        const balanceElement = document.querySelector('.balance');
+        if (balanceElement) {
+            balanceElement.textContent = Math.floor(newBalance).toString();
+        }
+        
+        // Сохраняем новое время последнего визита
+        saveLastVisitTime();
     }
 }
 
-// Функция для показа уведомления
-function showOfflineEarningsNotification(earnings) {
-    const notification = document.createElement('div');
-    notification.className = 'offline-earnings-notification';
-    notification.innerHTML = `
-        <div class="notification-content">
-            <h3>Офлайн прибыль!</h3>
-            <p>Вы заработали: ${Math.floor(earnings)} монет</p>
-            <button onclick="this.parentElement.parentElement.remove()">OK</button>
-        </div>
-    `;
-    document.body.appendChild(notification);
+// Функция для расчета прибыли
+function calculateOfflineEarnings() {
+    const currentTime = Date.now();
+    const lastSavedTime = parseInt(localStorage.getItem('lastVisitTime')) || currentTime;
+    const timeDiff = currentTime - lastSavedTime;
+    const hoursPassed = timeDiff / (1000 * 60 * 60); // Конвертируем миллисекунды в часы
     
-    setTimeout(() => {
-        notification.remove();
-    }, 5000);
+    // Получаем сохраненную почасовую прибыль
+    const hourlyRate = parseFloat(localStorage.getItem('hourlyRate')) || 0;
+    
+    // Рассчитываем прибыль за время отсутствия
+    return hoursPassed * hourlyRate;
 }
 
 // Функция для сохранения времени последнего визита
@@ -123,9 +135,77 @@ document.addEventListener('visibilitychange', () => {
         saveLastVisitTime();
     } else {
         // Страница снова видима - начисляем прибыль
-        updateBalanceWithOfflineEarnings(calculateOfflineEarnings());
+        addOfflineEarnings();
     }
 });
+// Функция для сохранения времени последнего визита
+function saveLastVisitTime() {
+    localStorage.setItem('lastVisitTime', Date.now());
+}
+
+// Функция для получения времени последнего визита
+function getLastVisitTime() {
+    return parseInt(localStorage.getItem('lastVisitTime')) || Date.now();
+}
+
+// Функция для получения текущей прибыли в час
+function getCurrentPerHour() {
+    let perHour = 0;
+    const purchasedCards = JSON.parse(localStorage.getItem('purchasedCards')) || [];
+    const cardsList = JSON.parse(localStorage.getItem('cardsList')) || [];
+
+    purchasedCards.forEach(cardId => {
+        const card = cardsList.find(c => c.id === cardId);
+        if (card) {
+            perHour += card.perHour;
+        }
+    });
+
+    return perHour;
+}
+
+// Функция для расчета офлайн прибыли
+function calculateOfflineEarnings() {
+    const lastVisit = getLastVisitTime();
+    const currentTime = Date.now();
+    const hoursOffline = (currentTime - lastVisit) / (1000 * 60 * 60); // Конвертируем миллисекунды в часы
+    const perHour = getCurrentPerHour();
+    
+    return Math.floor(hoursOffline * perHour);
+}
+
+// Функция для обновления баланса с учетом офлайн прибыли
+function updateBalanceWithOfflineEarnings() {
+    const offlineEarnings = calculateOfflineEarnings();
+    if (offlineEarnings > 0) {
+        const currentBalance = parseInt(localStorage.getItem('balance')) || 0;
+        const newBalance = currentBalance + offlineEarnings;
+        localStorage.setItem('balance', newBalance);
+        
+        // Показываем уведомление о полученной прибыли
+        showOfflineEarningsNotification(offlineEarnings);
+    }
+}
+
+// Функция для показа уведомления о полученной офлайн прибыли
+function showOfflineEarningsNotification(earnings) {
+    const notification = document.createElement('div');
+    notification.className = 'offline-earnings-notification';
+    notification.innerHTML = `
+        <div class="notification-content">
+            <h3>Добро пожаловать обратно!</h3>
+            <p>Пока вас не было, ваши коалы заработали:</p>
+            <div class="earnings-amount">+${earnings} 🌿</div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Удаляем уведомление через 5 секунд
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
 
 // Добавляем стили для уведомления
 const style = document.createElement('style');
@@ -146,6 +226,12 @@ style.textContent = `
         text-align: center;
     }
 
+    .earnings-amount {
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
     @keyframes slideIn {
         from {
             transform: translateX(100%);
@@ -161,6 +247,11 @@ document.head.appendChild(style);
 
 // Инициализация при загрузке страницы
 window.addEventListener('load', () => {
-    updateBalanceWithOfflineEarnings(calculateOfflineEarnings());
+    updateBalanceWithOfflineEarnings();
+    saveLastVisitTime();
+});
+
+// Сохраняем время перед закрытием страницы
+window.addEventListener('beforeunload', () => {
     saveLastVisitTime();
 });

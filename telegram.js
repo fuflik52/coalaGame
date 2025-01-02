@@ -1,16 +1,9 @@
 // Импортируем конфигурацию
 // import { TELEGRAM_BOT_TOKEN } from './config.js';
 
-// Импортируем функции для работы с данными пользователя
-import { initializeUser, getCurrentUser } from './game-data.js';
-
-// Проверяем, запущено ли приложение в Telegram
-const isTelegram = window.Telegram && window.Telegram.WebApp;
-const tg = isTelegram ? window.Telegram.WebApp : null;
-
-if (isTelegram) {
-    tg.expand();
-}
+// Инициализируем Telegram Web App
+const tg = window.Telegram.WebApp;
+tg.expand();
 
 class TelegramAuth {
     constructor() {
@@ -24,44 +17,18 @@ class TelegramAuth {
         this.initTelegramAuth();
     }
 
-    async initTelegramAuth() {
-        try {
-            // Инициализируем пользователя
-            const user = await initializeUser();
-            
-            // Обновляем UI
-            this.updateUserInterface(user);
-
-            if (isTelegram) {
-                console.log('[Telegram.WebApp] Initialized with user:', user);
-            } else {
-                console.log('[Browser] Initialized with user:', user);
-            }
-        } catch (error) {
-            console.error('Initialization error:', error);
-        }
-    }
-
-    updateUserInterface(user) {
-        if (!user) return;
-        
-        // Обновляем имя пользователя на странице
-        const usernameElement = document.querySelector('.username');
-        if (usernameElement) {
-            usernameElement.textContent = user.username;
+    initTelegramAuth() {
+        // Получаем данные пользователя из Telegram Web App
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const user = tg.initDataUnsafe.user;
+            this.handleTelegramAuth(user);
         }
 
-        // Обновляем баланс
-        const balanceElement = document.querySelector('.balance');
-        if (balanceElement) {
-            balanceElement.textContent = user.balance || '0';
-        }
-
-        // Обновляем аватар, если есть
-        const userIcon = document.querySelector('.user-icon');
-        if (userIcon) {
-            userIcon.src = user.avatar || 'https://i.postimg.cc/vBBWGZjL/image.png';
-        }
+        // Логируем события Telegram Web App
+        console.log('[Telegram.WebApp] Initialized');
+        tg.onEvent('viewportChanged', () => {
+            console.log('[Telegram.WebApp] Viewport changed');
+        });
     }
 
     handleTelegramAuth(user) {
@@ -173,9 +140,23 @@ class TelegramAuth {
 
     // Проверяем, был ли пользователь уже авторизован
     checkExistingAuth() {
-        const userId = sessionStorage.getItem('userId');
-        const username = sessionStorage.getItem('username');
-        return !!(userId && username);
+        const savedData = localStorage.getItem('userData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            this.username = data.username;
+            this.telegramId = data.telegramId;
+            this.isAuthenticated = true;
+            this.purchasedItems = data.purchasedCards || [];
+            this.balance = data.balance || 0;
+            this.energy = data.energy || 100;
+            
+            const usernameElement = document.querySelector('.username');
+            if (usernameElement) {
+                usernameElement.textContent = this.username;
+            }
+            return true;
+        }
+        return false;
     }
 
     // Выход из аккаунта
@@ -200,19 +181,20 @@ window.telegramAuth = new TelegramAuth();
 
 // Функция для вибрации на мобильных устройствах
 function vibrate(duration = 20) {
-    if (isTelegram) {
-        tg.HapticFeedback.impactOccurred('light');
-    } else if (navigator.vibrate) {
+    if (navigator.vibrate) {
         navigator.vibrate(duration);
     }
 }
 
 // Добавляем вибрацию на все кликабельные элементы
-document.addEventListener('DOMContentLoaded', async () => {
-    const isAuth = window.telegramAuth.checkExistingAuth();
-    if (!isAuth) return;
-
-    document.querySelectorAll('button, .nav-item, .clickable').forEach(element => {
-        element.addEventListener('click', () => vibrate());
+document.addEventListener('DOMContentLoaded', () => {
+    window.telegramAuth.checkExistingAuth();
+    
+    const clickableElements = document.querySelectorAll('button, .card-item, .nav-item, .main-circle');
+    
+    clickableElements.forEach(element => {
+        element.addEventListener('click', () => {
+            vibrate();
+        });
     });
 });
